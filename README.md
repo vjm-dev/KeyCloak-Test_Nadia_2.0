@@ -3,23 +3,47 @@ NOTE: This guide has been tested on a Windows 10-11 system.
 
 1. Please note that you will need [Docker Desktop](https://docs.docker.com/desktop/) open and running, from there: Install supabase.
 
+NOTE: Step 2 can be skipped, supabase is just optional.
 2. Inside the project/repository folder, use this command:
 ```bash
 supabase init && supabase start
 ```
 
-From step 3 to step 12, refer to: https://www.keycloak.org/getting-started/getting-started-docker.<br/>
-Note that in step 10, you must set the following option:
-- Valid redirect URIs: `http://localhost:3000/*`
+3. This step used Docker Desktop to enable Kubernetes in the Settings, ([read this article about how to enable](https://www.docker.com/blog/how-to-set-up-a-kubernetes-cluster-on-docker-desktop/)). You can use `minikube` if you like.
 
-3. Install Keycloak for Docker:
-```bash
-docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:25.0.6 start-dev
+In the terminal:
+
+Deploy Keycloak applying YAML files from *k8s-keycloak* directory:
+```sh
+kubectl apply -f k8s-keycloak/
 ```
+
+It should appear something like that:
+> ```sh
+> deployment.apps/keycloak created
+> service/keycloak created
+> ```
+
+Verify that the pod is running:
+```sh
+kubectl get pods
+```
+When the pod displays `STATUS: Running` (it may take a few seconds to download the image), continue.
+
+Access Keycloak from your local machine. Since the service is of type ClusterIP, we use port forwarding to redirect a local port to the pod:
+```sh
+kubectl port-forward service/keycloak 8080:8080
+```
+
+It should appear something like that:
+> ```sh
+> Forwarding from 127.0.0.1:8080 -> 8080
+> Forwarding from [::1]:8080 -> 8080
+> ```
 
 4. Go to http://localhost:8080, log in as user: `admin` and password: `admin`
 
-5. As admin: Create a realm, in this case, we call it "Anysolution."
+5. As admin: Create a realm, in this case, we call it "Anysolution".
 
 6. As admin: Inside the "Anysolution" realm, create a user, although you may need to create a role for it. Then go to Credentials >> Set password, set the password, and set Temporary to _Off_.
 
@@ -71,3 +95,9 @@ After that, run the project:
 npm run dev
 ```
 And open http://localhost:3000 in your browser.
+
+To stop the pod in Kubernetes, just close with `Ctrl + C` at the running terminal pod. 
+If you want to start again, just use:
+```sh
+kubectl port-forward service/keycloak 8080:8080
+```
